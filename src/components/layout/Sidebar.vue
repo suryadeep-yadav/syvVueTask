@@ -11,7 +11,7 @@
         <span class="nav-text">Form Templates</span>
       </router-link>
       
-      <!-- <router-link to="/forms" class="nav-item">
+      <router-link to="/forms" class="nav-item">
         <span class="nav-icon">📝</span>
         <span class="nav-text">Forms</span>
       </router-link>
@@ -19,7 +19,7 @@
       <router-link to="/submissions" class="nav-item">
         <span class="nav-icon">📊</span>
         <span class="nav-text">Submissions</span>
-      </router-link> -->
+      </router-link>
     </nav>
   </aside>
 </template>
