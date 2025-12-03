@@ -149,6 +149,7 @@ const openStepsModal = () => {
 
 .btn-preview {
   padding: 8px 20px;
+  margin-left: 8px;
   background: #6c757d;
   color: white;
   border: none;

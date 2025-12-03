@@ -40,12 +40,12 @@ const elements = ref<DraggableElement[]>([
   { type: 'text-box', label: 'Text Box', icon: 'T' },
   { type: 'short-answer', label: 'Short Answer', icon: 'SA' },
   { type: 'long-answer', label: 'Long Answer', icon: 'LA' },
-  { type: 'file-upload', label: 'File Upload', icon: '📎' },
-  { type: 'dropdown', label: 'Dropdown', icon: '▼' },
-  { type: 'multi-select', label: 'Multi Select', icon: '☑' },
-  { type: 'radio-button', label: 'Radio Button', icon: '○' },
-  { type: 'checkbox', label: 'Checkbox', icon: '✓' },
-  { type: 'date-range', label: 'Date Range', icon: '📅' }
+  { type: 'file-upload', label: 'File Upload', icon: 'FU' },
+  { type: 'dropdown', label: 'Dropdown', icon: 'D' },
+  { type: 'multi-select', label: 'Multi Select', icon: 'MS' },
+  { type: 'radio-button', label: 'Radio Button', icon: 'RB' },
+  { type: 'checkbox', label: 'Checkbox', icon: 'C' },
+  { type: 'date-range', label: 'Date Range', icon: 'DR' }
 ]);
 
 const getElementIcon = (type: string): string => {
