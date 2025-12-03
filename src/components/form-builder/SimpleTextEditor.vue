@@ -8,60 +8,60 @@
         <option value="heading">Heading</option>
         <option value="subheading">Subheading</option>
       </select>
-      
+     
       <!-- Formatting buttons -->
       <div class="formatting-buttons">
-        <button 
-          @click="toggleFormat('bold')" 
-          class="toolbar-btn" 
+        <button
+          @click="toggleFormat('bold')"
+          class="toolbar-btn"
           :class="{ 'active': formats.bold }"
           title="Bold"
         >
           <span class="bold-text">B</span>
         </button>
-        
-        <button 
-          @click="toggleFormat('italic')" 
-          class="toolbar-btn" 
+       
+        <button
+          @click="toggleFormat('italic')"
+          class="toolbar-btn"
           :class="{ 'active': formats.italic }"
           title="Italic"
         >
           <span class="italic-text">I</span>
         </button>
-        
-        <button 
-          @click="toggleFormat('underline')" 
-          class="toolbar-btn" 
+       
+        <button
+          @click="toggleFormat('underline')"
+          class="toolbar-btn"
           :class="{ 'active': formats.underline }"
           title="Underline"
         >
           <span class="underline-text">U</span>
         </button>
-        
+       
         <!-- Equal sign button (probably for alignment) -->
-        <button 
-          @click="toggleFormat('alignCenter')" 
-          class="toolbar-btn" 
+        <button
+          @click="toggleFormat('alignCenter')"
+          class="toolbar-btn"
           :class="{ 'active': formats.alignCenter }"
           title="Center Align"
         >
           <span class="equal-sign">=</span>
         </button>
-        
+       
         <!-- Bullet list button -->
-        <button 
-          @click="toggleFormat('bulletList')" 
-          class="toolbar-btn" 
+        <button
+          @click="toggleFormat('bulletList')"
+          class="toolbar-btn"
           :class="{ 'active': formats.bulletList }"
           title="Bullet List"
         >
           <span class="bullet-icon">•</span>
         </button>
-        
+       
         <!-- Checkbox button -->
-        <button 
-          @click="toggleFormat('checkbox')" 
-          class="toolbar-btn" 
+        <button
+          @click="toggleFormat('checkbox')"
+          class="toolbar-btn"
           :class="{ 'active': formats.checkbox }"
           title="Checkbox"
         >
@@ -69,28 +69,27 @@
         </button>
       </div>
     </div>
-    
-    <!-- Text area -->
-    <textarea
-      ref="textarea"
-      v-model="content"
+   
+    <!-- Content editable div -->
+    <div
+      ref="editor"
+      class="editor-content"
+      contenteditable="true"
       @input="onInput"
       @keydown="onKeyDown"
-      class="editor-textarea"
-      :placeholder="placeholder"
-      :style="textAreaStyles"
-      rows="4"
-    ></textarea>
-    
+      :data-placeholder="placeholder"
+      spellcheck="false"
+    ></div>
+   
     <!-- Character counter (optional) -->
     <div class="editor-footer">
-      <span class="char-count">{{ content.length }} characters</span>
+      <span class="char-count">{{ editor?.innerText?.length || 0 }} characters</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 
 interface Props {
   modelValue: string;
@@ -111,8 +110,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-const textarea = ref<HTMLTextAreaElement>();
-const content = ref(props.modelValue);
+const editor = ref<HTMLDivElement>();
 const mode = ref(props.mode);
 const formats = ref({
   bold: false,
@@ -123,111 +121,172 @@ const formats = ref({
   checkbox: false
 });
 
-// Compute text area styles based on mode and formats
-const textAreaStyles = computed(() => {
-  const styles: any = {};
-  
-  // Mode-based styles
-  if (mode.value === 'heading') {
-    styles.fontSize = '18px';
-    styles.fontWeight = '600';
-    styles.color = '#333';
-  } else if (mode.value === 'subheading') {
-    styles.fontSize = '16px';
-    styles.fontWeight = '500';
-    styles.color = '#555';
+const commandMap = {
+  bold: 'bold',
+  italic: 'italic',
+  underline: 'underline',
+  alignCenter: 'justifyCenter',
+  bulletList: 'insertUnorderedList'
+} as const;
+
+const updateActiveFormats = () => {
+  if (!editor.value || typeof document === 'undefined') return;
+
+  // Ensure we're using inline styles, not classes
+  document.execCommand('styleWithCSS', false, false);
+  document.execCommand('defaultParagraphSeparator', false, 'p');
+
+  formats.value = {
+    bold: document.queryCommandState('bold'),
+    italic: document.queryCommandState('italic'),
+    underline: document.queryCommandState('underline'),
+    alignCenter: document.queryCommandState('justifyCenter'),
+    bulletList: document.queryCommandState('insertUnorderedList'),
+    checkbox: false
+  };
+
+  // Update mode based on selection block
+  const blockValue = document.queryCommandValue('formatBlock');
+  const lowerBlock = blockValue.toLowerCase();
+  if (lowerBlock === 'h1') {
+    mode.value = 'heading';
+  } else if (lowerBlock === 'h2') {
+    mode.value = 'subheading';
   } else {
-    styles.fontSize = '14px';
-    styles.fontWeight = '400';
-    styles.color = '#333';
+    mode.value = 'normal';
   }
-  
-  // Format-based styles
-  if (formats.value.bold) styles.fontWeight = 'bold';
-  if (formats.value.italic) styles.fontStyle = 'italic';
-  if (formats.value.underline) styles.textDecoration = 'underline';
-  if (formats.value.alignCenter) styles.textAlign = 'center';
-  
-  return styles;
-});
 
-watch(() => props.modelValue, (newValue) => {
-  content.value = newValue;
-});
-
-watch(() => props.mode, (newMode) => {
-  mode.value = newMode;
-  emit('mode-change', newMode);
-});
-
-const onInput = () => {
-  emit('update:modelValue', content.value);
-};
-
-const toggleFormat = (format: keyof typeof formats.value) => {
-  formats.value[format] = !formats.value[format];
-  emit('format-change', { ...formats.value });
-  
-  // If it's a bullet list or checkbox, add the marker
-  if (format === 'bulletList' && formats.value.bulletList) {
-    const cursorPos = textarea.value?.selectionStart || 0;
-    const textBefore = content.value.substring(0, cursorPos);
-    const textAfter = content.value.substring(cursorPos);
-    
-    // Add bullet at cursor position
-    content.value = textBefore + '• ' + textAfter;
-    emit('update:modelValue', content.value);
-    
-    // Move cursor after bullet
-    setTimeout(() => {
-      if (textarea.value) {
-        textarea.value.selectionStart = cursorPos + 2;
-        textarea.value.selectionEnd = cursorPos + 2;
+  // Update checkbox based on cursor position
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount === 1) {
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) {
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(editor.value);
+      preRange.setEnd(range.endContainer, range.startOffset);
+      const textBefore = preRange.toString();
+      if (textBefore.endsWith('☐ ')) {
+        formats.value.checkbox = true;
       }
-    }, 0);
-  }
-  
-  if (format === 'checkbox' && formats.value.checkbox) {
-    const cursorPos = textarea.value?.selectionStart || 0;
-    const textBefore = content.value.substring(0, cursorPos);
-    const textAfter = content.value.substring(cursorPos);
-    
-    // Add checkbox at cursor position
-    content.value = textBefore + '☐ ' + textAfter;
-    emit('update:modelValue', content.value);
-    
-    // Move cursor after checkbox
-    setTimeout(() => {
-      if (textarea.value) {
-        textarea.value.selectionStart = cursorPos + 2;
-        textarea.value.selectionEnd = cursorPos + 2;
-      }
-    }, 0);
-  }
-  
-  // Focus back on textarea
-  textarea.value?.focus();
-};
-
-const onKeyDown = (event: KeyboardEvent) => {
-  // Handle formatting with keyboard shortcuts
-  if (event.ctrlKey || event.metaKey) {
-    switch (event.key.toLowerCase()) {
-      case 'b':
-        event.preventDefault();
-        toggleFormat('bold');
-        break;
-      case 'i':
-        event.preventDefault();
-        toggleFormat('italic');
-        break;
-      case 'u':
-        event.preventDefault();
-        toggleFormat('underline');
-        break;
     }
   }
 };
+
+const insertCheckbox = () => {
+  if (!editor.value) return;
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const textNode = document.createTextNode('☐ ');
+  range.insertNode(textNode);
+  range.setStartAfter(textNode);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+};
+
+const removeCheckbox = () => {
+  if (!editor.value) return;
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+
+  const range = sel.getRangeAt(0);
+  if (range.collapsed) {
+    const preRange = range.cloneRange();
+    preRange.selectNodeContents(editor.value);
+    preRange.setEnd(range.endContainer, range.startOffset);
+    const textBefore = preRange.toString();
+    if (textBefore.endsWith('☐ ')) {
+      range.setStart(range.startContainer, range.startOffset - 2);
+      range.deleteContents();
+    }
+  }
+};
+
+const onInput = () => {
+  if (editor.value) {
+    emit('update:modelValue', editor.value.innerHTML);
+  }
+};
+
+const toggleFormat = (format: keyof typeof formats.value) => {
+  if (!editor.value) return;
+
+  editor.value.focus();
+
+  if (format === 'checkbox') {
+    updateActiveFormats();
+    if (formats.value.checkbox) {
+      removeCheckbox();
+    } else {
+      insertCheckbox();
+    }
+  } else {
+    const command = commandMap[format];
+    if (command) {
+      document.execCommand(command, false, null);
+    }
+  }
+
+  updateActiveFormats();
+  emit('format-change', { ...formats.value });
+};
+
+const onKeyDown = (event: KeyboardEvent) => {
+  if (event.ctrlKey || event.metaKey) {
+    let handled = false;
+    switch (event.key.toLowerCase()) {
+      case 'b':
+        toggleFormat('bold');
+        handled = true;
+        break;
+      case 'i':
+        toggleFormat('italic');
+        handled = true;
+        break;
+      case 'u':
+        toggleFormat('underline');
+        handled = true;
+        break;
+    }
+    if (handled) {
+      event.preventDefault();
+    }
+  }
+};
+
+// Apply mode changes to selection
+watch(mode, (newMode) => {
+  if (!editor.value || typeof document === 'undefined') return;
+  editor.value.focus();
+  const block = newMode === 'heading' ? '<h1>' : newMode === 'subheading' ? '<h2>' : '<p>';
+  document.execCommand('formatBlock', false, block);
+  emit('mode-change', newMode);
+});
+
+// Sync prop changes
+watch(() => props.modelValue, (newValue) => {
+  if (editor.value && editor.value.innerHTML !== newValue) {
+    editor.value.innerHTML = newValue || '';
+    updateActiveFormats();
+  }
+}, { immediate: true });
+
+watch(() => props.mode, (newMode) => {
+  mode.value = newMode;
+});
+
+// Listen to selection changes
+onMounted(() => {
+  updateActiveFormats();
+  window.addEventListener('selectionchange', updateActiveFormats);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('selectionchange', updateActiveFormats);
+});
 </script>
 
 <style scoped>
@@ -239,12 +298,10 @@ const onKeyDown = (event: KeyboardEvent) => {
   overflow: hidden;
   transition: border-color 0.2s;
 }
-
 .simple-text-editor:focus-within {
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
-
 .editor-toolbar {
   display: flex;
   align-items: center;
@@ -254,7 +311,6 @@ const onKeyDown = (event: KeyboardEvent) => {
   border-bottom: 1px solid #e0e0e0;
   min-height: 44px;
 }
-
 .mode-selector {
   padding: 4px 8px;
   border: 1px solid #ced4da;
@@ -266,12 +322,10 @@ const onKeyDown = (event: KeyboardEvent) => {
   min-width: 80px;
   height: 28px;
 }
-
 .mode-selector:focus {
   outline: none;
   border-color: #007bff;
 }
-
 .formatting-buttons {
   display: flex;
   gap: 2px;
@@ -281,7 +335,6 @@ const onKeyDown = (event: KeyboardEvent) => {
   padding: 2px;
   margin-left: auto;
 }
-
 .toolbar-btn {
   width: 28px;
   height: 28px;
@@ -296,63 +349,59 @@ const onKeyDown = (event: KeyboardEvent) => {
   color: #495057;
   transition: all 0.15s;
 }
-
 .toolbar-btn:hover {
   background: #e9ecef;
 }
-
 .toolbar-btn.active {
   background: #007bff;
   color: white;
 }
-
 .toolbar-btn:active {
   transform: scale(0.95);
 }
-
 .bold-text {
   font-weight: bold;
 }
-
 .italic-text {
   font-style: italic;
 }
-
 .underline-text {
   text-decoration: underline;
 }
-
 .equal-sign {
   font-weight: bold;
   font-size: 16px;
 }
-
 .bullet-icon {
   font-size: 18px;
   line-height: 1;
 }
-
 .checkbox-icon {
   font-size: 14px;
 }
-
-.editor-textarea {
+.editor-content {
   width: 100%;
   padding: 12px;
   border: none;
   outline: none;
-  resize: vertical;
   min-height: 100px;
   font-family: inherit;
   line-height: 1.5;
   background: transparent;
+  overflow-y: auto;
+  cursor: text;
 }
-
-.editor-textarea::placeholder {
+.editor-content:empty::before {
+  content: attr(data-placeholder);
   color: #6c757d;
+  display: block;
+  padding: 12px;
   opacity: 0.7;
+  pointer-events: none;
 }
-
+.editor-content[contenteditable]:focus {
+  outline: none;
+}
 .editor-footer {
   padding: 8px 12px;
   border-top: 1px solid #e0e0e0;
@@ -360,7 +409,6 @@ const onKeyDown = (event: KeyboardEvent) => {
   display: flex;
   justify-content: flex-end;
 }
-
 .char-count {
   font-size: 12px;
   color: #6c757d;
