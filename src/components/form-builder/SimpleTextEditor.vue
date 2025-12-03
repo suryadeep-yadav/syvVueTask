@@ -133,7 +133,7 @@ const updateActiveFormats = () => {
   if (!editor.value || typeof document === 'undefined') return;
 
   // Ensure we're using inline styles, not classes
-  document.execCommand('styleWithCSS', false, false);
+  document.execCommand('styleWithCSS', false, 'false');
   document.execCommand('defaultParagraphSeparator', false, 'p');
 
   formats.value = {
@@ -226,7 +226,7 @@ const toggleFormat = (format: keyof typeof formats.value) => {
   } else {
     const command = commandMap[format];
     if (command) {
-      document.execCommand(command, false, null);
+      document.execCommand(command, false, undefined);
     }
   }
 
