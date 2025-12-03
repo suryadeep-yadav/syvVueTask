@@ -1,17 +1,11 @@
 <template>
-  <div
-    class="form-element"
-    :class="{ 'is-expanded': isExpanded, 'is-required': element.required }"
-    draggable="true"
-    @dragstart="onDragStart"
-    @dragover.prevent
-    @drop="onDrop"
-  >
+  <div class="form-element" :class="{ 'is-expanded': isExpanded, 'is-required': element.required }" draggable="true"
+    @dragstart="onDragStart" @dragover.prevent @drop="onDrop">
     <div class="element-header">
       <div class="drag-handle" title="Drag to reorder">
         ⋮⋮
       </div>
-      
+
       <div class="element-info" @click="toggleExpand">
         <span class="element-type">{{ getElementTypeLabel(element.type) }}</span>
         <h4 class="element-title">{{ element.label }}</h4>
@@ -20,7 +14,7 @@
           {{ truncateDescription(element.description) }}
         </span>
       </div>
-      
+
       <div class="element-actions">
         <button @click="toggleExpand" class="btn-icon" :title="isExpanded ? 'Collapse' : 'Expand'">
           {{ isExpanded ? '▲' : '▼' }}
@@ -30,31 +24,29 @@
         </button>
       </div>
     </div>
-    
+
     <div v-if="isExpanded" class="element-settings">
       <div class="form-group">
         <label>Label *</label>
-        <input
-          type="text"
-          v-model="localElement.label"
-          @input="onUpdate"
-          class="form-control"
-          placeholder="Enter field label"
-          required
-        />
+        <input type="text" v-model="localElement.label" @input="onUpdate" class="form-control"
+          placeholder="Enter field label" required />
       </div>
-      
-      <div class="form-group">
+      <div v-if="isLongAnswer" class="form-group">
+        <label>Text Content</label>
+        <div class="text-editor-container">
+          <SimpleTextEditor :model-value="localElement.content || ''"
+            @update:modelValue="val => localElement.content = val" :mode="localElement.settings?.mode || 'normal'"
+            :placeholder="localElement.placeholder || 'Enter content here'" @format-change="onFormatChange"
+            @mode-change="onModeChange" />
+
+        </div>
+      </div>
+      <div v-else class="form-group">
         <label>Description</label>
-        <textarea
-          v-model="localElement.description"
-          @input="onUpdate"
-          class="form-control"
-          rows="2"
-          placeholder="Add description or instructions"
-        />
+        <textarea v-model="localElement.description" @input="onUpdate" class="form-control" rows="2"
+          placeholder="Add description or instructions" />
       </div>
-      
+
       <!-- <div class="form-group">
         <label>Placeholder (Optional)</label>
         <input
@@ -65,7 +57,7 @@
           placeholder="Enter placeholder text"
         />
       </div> -->
-      
+
       <!-- <div class="form-group">
         <label class="checkbox-label">
           <input
@@ -76,24 +68,15 @@
           Required field
         </label>
       </div> -->
-      
+
       <div v-if="hasOptions" class="form-group">
         <label>Options</label>
         <div class="options-list">
           <div v-for="(option, index) in localElement.options" :key="index" class="option-item">
-            <input
-              type="text"
-              v-model="localElement.options![index]"
-              @input="onOptionsUpdate"
-              class="form-control option-input"
-              :placeholder="`Option ${index + 1}`"
-            />
-            <button 
-              @click="removeOption(index)" 
-              class="btn-icon small delete-btn"
-              :disabled="localElement.options!.length <= 2"
-              title="Remove option"
-            >
+            <input type="text" v-model="localElement.options![index]" @input="onOptionsUpdate"
+              class="form-control option-input" :placeholder="`Option ${index + 1}`" />
+            <button @click="removeOption(index)" class="btn-icon small delete-btn"
+              :disabled="localElement.options!.length <= 2" title="Remove option">
               ×
             </button>
           </div>
@@ -102,7 +85,7 @@
           </button>
         </div>
       </div>
-      
+
       <div class="form-group element-id">
         <small>Element ID: {{ element.id }}</small>
       </div>
@@ -113,6 +96,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import type { FormElement } from '@/types/form';
+import SimpleTextEditor from './SimpleTextEditor.vue';
 
 interface Props {
   element: FormElement;
@@ -133,6 +117,9 @@ const localElement = ref({ ...props.element });
 
 const hasOptions = computed(() => {
   return ['dropdown', 'multi-select', 'radio-button'].includes(props.element.type);
+});
+const isLongAnswer = computed(() => {
+  return props.element.type === 'long-answer';
 });
 
 const getElementTypeLabel = (type: string): string => {
@@ -159,7 +146,25 @@ const truncateDescription = (description: string): string => {
 };
 
 watch(() => props.element, (newVal) => {
-  localElement.value = { ...newVal };
+  localElement.value = {
+    ...newVal,
+    // Ensure settings exist for long-answer elements
+    settings: newVal.type === 'long-answer' ? {
+      formatting: {
+        bold: false,
+        italic: false,
+        underline: false,
+        alignCenter: false,
+        bulletList: false,
+        checkbox: false
+      },
+      mode: 'normal',
+      validation: {
+        required: false
+      },
+      ...newVal.settings
+    } : newVal.settings
+  };
 }, { deep: true });
 
 const toggleExpand = () => {
@@ -168,6 +173,28 @@ const toggleExpand = () => {
 
 const onUpdate = () => {
   emit('update:element', localElement.value);
+};
+// Add these methods after your existing methods
+
+const onFormatChange = (formats: any) => {
+  if (!localElement.value.settings) {
+    localElement.value.settings = {};
+  }
+  localElement.value.settings.formatting = formats;
+  onUpdate();
+};
+
+const onModeChange = (mode: string) => {
+  if (!localElement.value.settings) {
+    localElement.value.settings = {};
+  }
+  localElement.value.settings.mode = mode;
+  onUpdate();
+};
+
+const onContentChange = (content: string) => {
+  localElement.value.content = content;
+  onUpdate();
 };
 
 const addOption = () => {
@@ -199,7 +226,7 @@ const onDragStart = (event: DragEvent) => {
   if (event.dataTransfer) {
     event.dataTransfer.setData('element-index', props.index.toString());
     event.dataTransfer.effectAllowed = 'move';
-    
+
     // Visual feedback
     const element = event.target as HTMLElement;
     element.classList.add('dragging');
@@ -215,7 +242,7 @@ const onDrop = (event: DragEvent) => {
       emit('reorder', parseInt(oldIndex), newIndex);
     }
   }
-  
+
   // Remove dragging class
   const elements = document.querySelectorAll('.form-element.dragging');
   elements.forEach(el => el.classList.remove('dragging'));
@@ -375,6 +402,7 @@ const onDrop = (event: DragEvent) => {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -480,5 +508,36 @@ const onDrop = (event: DragEvent) => {
   border-top: 1px dashed #dee2e6;
   color: #6c757d;
   font-size: 12px;
+}
+
+.display-settings {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.setting-row:last-child {
+  margin-bottom: 0;
+}
+
+.setting-label {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.form-control.small {
+  padding: 6px 10px;
+  font-size: 13px;
+  width: 150px;
 }
 </style>

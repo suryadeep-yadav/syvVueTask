@@ -157,7 +157,24 @@ export const useFormBuilderStore = defineStore('formBuilder', () => {
       required: false,
       settings: {}
     };
-
+    // In store's addElement function, update for text elements:
+    if (['long-answer', 'rich-text'].includes(elementType)) {
+      newElement.settings = {
+        formatting: {
+          bold: false,
+          italic: false,
+          underline: false,
+          alignCenter: false,
+          bulletList: false,
+          checkbox: false
+        },
+        mode: 'normal',
+        validation: {
+          required: false
+        }
+      };
+      newElement.content = ''; // Add content field
+    }
     if (['dropdown', 'multi-select', 'radio-button'].includes(elementType)) {
       newElement.options = ['Option 1', 'Option 2', 'Option 3'];
     }

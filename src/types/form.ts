@@ -7,8 +7,16 @@ export interface FormElement {
   required: boolean;
   options?: string[];
   settings: Record<string, any>;
+  content?: string;
 }
-
+export interface TextFormatting {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  alignCenter: boolean;
+  bulletList: boolean;
+  checkbox: boolean;
+}
 export type FormElementType = 
   | 'heading'
   | 'text-box'
