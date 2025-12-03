@@ -27,4 +27,11 @@ import PreviewModal from './PreviewModal.vue';
   display: flex;
   height: 100%;
 }
+/* in mobile view */ 
+@media (max-width: 768px) {
+  .builder-container {
+    flex-direction: column;
+    height: auto;
+  }
+}
 </style>

@@ -20,7 +20,7 @@ const draggableElements = [
 export const useFormBuilderStore = defineStore('formBuilder', () => {
   // State
   const currentTemplate = ref<FormTemplate>(createNewTemplate());
-  const currentStepId = ref<string>(currentTemplate.value.steps[0].id);
+  const currentStepId = ref<string>(currentTemplate.value.steps[0]?.id || '');
   const isPreviewMode = ref(false);
   const isStepsModalOpen = ref(false);
   const draggableElementsList = ref(draggableElements);
@@ -79,21 +79,24 @@ export const useFormBuilderStore = defineStore('formBuilder', () => {
       alert('Cannot delete the last step. A form must have at least one step.');
       return;
     }
-    
+
     const index = currentTemplate.value.steps.findIndex(s => s.id === stepId);
     if (index !== -1) {
       currentTemplate.value.steps.splice(index, 1);
-      
+
       // Update order
       currentTemplate.value.steps.forEach((step, idx) => {
         step.order = idx + 1;
       });
-      
+
       // If current step was deleted, switch to first step
       if (stepId === currentStepId.value) {
-        setCurrentStep(currentTemplate.value.steps[0].id);
+        if (currentTemplate.value.steps.length > 0) {
+          setCurrentStep(currentTemplate.value.steps[0]?.id || '');
+        }
+
       }
-      
+
       updateTimestamp();
     }
   }
@@ -119,13 +122,14 @@ export const useFormBuilderStore = defineStore('formBuilder', () => {
   function reorderSteps(oldIndex: number, newIndex: number) {
     const steps = currentTemplate.value.steps;
     const [movedStep] = steps.splice(oldIndex, 1);
+    if (!movedStep) return;
     steps.splice(newIndex, 0, movedStep);
-    
+
     // Update order
     steps.forEach((step, idx) => {
       step.order = idx + 1;
     });
-    
+
     updateTimestamp();
   }
 
@@ -190,6 +194,7 @@ export const useFormBuilderStore = defineStore('formBuilder', () => {
 
     const elements = step.elements;
     const [movedElement] = elements.splice(oldIndex, 1);
+    if (!movedElement) return;
     elements.splice(newIndex, 0, movedElement);
     updateTimestamp();
   }
@@ -198,7 +203,7 @@ export const useFormBuilderStore = defineStore('formBuilder', () => {
     updateTimestamp();
     console.log('Saving template:', JSON.stringify(currentTemplate.value, null, 2));
     alert('Template saved! Check console for JSON output.');
-    
+
     // In a real app, you would make an API call here
     // Example: await api.saveTemplate(currentTemplate.value);
   }
@@ -213,7 +218,7 @@ export const useFormBuilderStore = defineStore('formBuilder', () => {
 
   function resetTemplate() {
     currentTemplate.value = createNewTemplate();
-    currentStepId.value = currentTemplate.value.steps[0].id;
+    currentStepId.value = currentTemplate.value.steps[0]?.id || '';
     isPreviewMode.value = false;
   }
 

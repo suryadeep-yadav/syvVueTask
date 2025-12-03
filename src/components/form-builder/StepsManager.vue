@@ -85,8 +85,9 @@ const onDragStart = (event: DragEvent, index: number) => {
 const onDrop = (event: DragEvent, newIndex: number) => {
   event.preventDefault();
   const oldIndex = event.dataTransfer?.getData('step-index');
+  if (oldIndex === undefined) return;
   if (oldIndex !== null) {
-    store.reorderSteps(parseInt(oldIndex), newIndex);
+    store.reorderSteps(parseInt(oldIndex || '0'), newIndex);
   }
 };
 </script>

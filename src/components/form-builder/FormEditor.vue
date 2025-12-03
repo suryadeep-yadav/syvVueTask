@@ -8,7 +8,7 @@
           Manage Steps
         </button>
       </div>
-      
+
       <div class="editor-actions">
         <button @click="togglePreview" class="btn-preview">
           {{ isPreviewMode ? 'Edit Form' : 'Preview Form' }}
@@ -18,31 +18,28 @@
         </button>
       </div>
     </div>
-    
-    <div
-      class="editor-canvas"
-      @dragover.prevent
-      @drop="onDrop"
-      :class="{ 'preview-mode': isPreviewMode }"
-    >
+
+    <div class="editor-canvas" @dragover.prevent @drop="onDrop" :class="{ 'preview-mode': isPreviewMode }">
       <div v-if="!currentStep?.elements.length" class="empty-state">
         <div class="empty-icon">📝</div>
         <h3>No elements added yet</h3>
         <p>Drag form elements from the left panel to get started</p>
       </div>
-      
+
       <template v-else>
-        <FormElement
-          v-for="(element, index) in currentStep?.elements"
-          :key="element.id"
-          :element="element"
-          :index="index"
-          @update:element="updateElement(element.id, $event)"
-          @delete="deleteElement"
-          @reorder="reorderElements"
-          class="editor-element"
-        />
+        <FormElement v-for="(element, index) in currentStep?.elements" :key="element.id" :element="element"
+          :index="index" @update:element="updateElement(element.id, $event)" @delete="deleteElement"
+          @reorder="reorderElements" class="editor-element" />
       </template>
+    </div>
+    <!-- In FormEditor.vue -->
+    <div class="steps-selector">
+      <select v-model="store.currentStepId">
+        <option v-for="step in store.currentTemplate.steps" :value="step.id">
+          {{ step.order }}. {{ step.title }}
+        </option>
+      </select>
+      <button @click="store.saveTemplate">Save Template</button>
     </div>
   </div>
 </template>
@@ -232,12 +229,55 @@ const openStepsModal = () => {
   margin-bottom: 20px;
   animation: fadeIn 0.3s ease;
 }
+.steps-selector {
+  padding: 24px;
+  background: white;
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
+.steps-selector button {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.steps-selector select {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.steps-selector select option {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

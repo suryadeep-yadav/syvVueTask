@@ -4,16 +4,13 @@
       <h3 class="panel-title">Form Elements</h3>
       <p class="panel-subtitle">Drag elements to the editor</p>
     </div>
-    
+    <!-- In FormElementsPanel.vue -->
+    <div class="search-bar">
+      <input type="text" placeholder="Search elements..." v-model="searchQuery"  class="search-input">
+    </div>
     <div class="elements-list">
-      <div
-        v-for="element in elements"
-        :key="element.type"
-        class="element-item"
-        draggable="true"
-        @dragstart="onDragStart($event, element.type)"
-        @dragend="onDragEnd"
-      >
+      <div v-for="element in filteredElements" :key="element.type" class="element-item" draggable="true"
+        @dragstart="onDragStart($event, element.type)" @dragend="onDragEnd">
         <div class="element-icon">
           {{ getElementIcon(element.type) }}
         </div>
@@ -27,14 +24,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref , computed} from 'vue';
 
 interface DraggableElement {
   type: string;
   label: string;
   icon: string;
 }
-
+const searchQuery = ref('');
 const elements = ref<DraggableElement[]>([
   { type: 'heading', label: 'Heading', icon: 'H' },
   { type: 'text-box', label: 'Text Box', icon: 'T' },
@@ -47,6 +44,16 @@ const elements = ref<DraggableElement[]>([
   { type: 'checkbox', label: 'Checkbox', icon: 'C' },
   { type: 'date-range', label: 'Date Range', icon: 'DR' }
 ]);
+const filteredElements = computed(() => {
+  if (!searchQuery.value.trim()) return elements.value;
+
+  const query = searchQuery.value.toLowerCase();
+
+  return elements.value.filter(el =>
+    el.label.toLowerCase().includes(query) ||
+    el.type.toLowerCase().includes(query)
+  );
+});
 
 const getElementIcon = (type: string): string => {
   const element = elements.value.find(el => el.type === type);
@@ -73,11 +80,11 @@ const onDragStart = (event: DragEvent, elementType: string) => {
   if (event.dataTransfer) {
     event.dataTransfer.setData('text/plain', elementType);
     event.dataTransfer.effectAllowed = 'copy';
-    
+
     // Visual feedback
     const element = event.target as HTMLElement;
     element.classList.add('dragging');
-    
+
     // Set drag image (optional)
     if (event.dataTransfer.setDragImage && element) {
       const dragImage = element.cloneNode(true) as HTMLElement;
@@ -232,5 +239,23 @@ const onDragEnd = (event: DragEvent) => {
   font-size: 14px;
   padding: 20px;
   opacity: 0.7;
+}
+.search-bar {
+  padding: 8px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.empty-state {
+  padding: 12px;
+  text-align: center;
+  color: #777;
+  font-size: 13px;
 }
 </style>

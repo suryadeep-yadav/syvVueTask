@@ -45,7 +45,7 @@
       </div>
       
       <div class="form-group">
-        <label>Description (Optional)</label>
+        <label>Description</label>
         <textarea
           v-model="localElement.description"
           @input="onUpdate"
@@ -55,7 +55,7 @@
         />
       </div>
       
-      <div class="form-group">
+      <!-- <div class="form-group">
         <label>Placeholder (Optional)</label>
         <input
           type="text"
@@ -64,9 +64,9 @@
           class="form-control"
           placeholder="Enter placeholder text"
         />
-      </div>
+      </div> -->
       
-      <div class="form-group">
+      <!-- <div class="form-group">
         <label class="checkbox-label">
           <input
             type="checkbox"
@@ -75,7 +75,7 @@
           />
           Required field
         </label>
-      </div>
+      </div> -->
       
       <div v-if="hasOptions" class="form-group">
         <label>Options</label>
