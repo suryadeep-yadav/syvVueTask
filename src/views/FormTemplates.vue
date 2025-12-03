@@ -37,4 +37,17 @@ import FormBuilder from '@/components/form-builder/FormBuilder.vue';
   color: #6c757d;
   font-size: 16px;
 }
+@media (max-width: 768px) {
+  .form-templates-page {
+    margin-left: 0;
+  }
+
+  .page-header {
+    padding: 24px 16px; /* Reduce padding on small screens if needed */
+  }
+
+  .page-header h1 {
+    font-size: 24px; /* Smaller heading on mobile */
+  }
+}
 </style>
